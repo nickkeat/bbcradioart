@@ -30,14 +30,25 @@ This is to make all three a bit greater together by fetching the show and artist
   
 # To install this program as a service:
 Ensure bbcradioart.service has the correct path to python3 and bbcradioart.py: 
-  nano bbcradioart.service
+
+nano bbcradioart.service
+
 Copy bbcradioart.service to the systemd folder:
-  sudo cp bbcradioart.service /etc/systemd/system
+
+sudo cp bbcradioart.service /etc/systemd/system
+
 Set permissions for the bbcradio.service file :
-  sudo chmod 644 /etc/systemd/system/bbcradioart.service
+
+sudo chmod 644 /etc/systemd/system/bbcradioart.service
+
 Get systemd to recognise the new service:
-  sudo systemctl daemon-reload
+
+sudo systemctl daemon-reload
+
 Reboot the system, or manually get the service to start:
-  sudo service bbcradioart start
+
+sudo service bbcradioart start
+
 Check the status of the service:
-  sudo service bbcradioart status
+
+sudo service bbcradioart status
