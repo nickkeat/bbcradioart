@@ -1,0 +1,16 @@
+[Unit]
+Description=Service to fetch show and track art for BBC radio streams for Volumio / pirateaudio
+After=multi-user.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 /home/volumio/bbc_radio_art.py
+Restart=always
+StandardOutput=syslog
+StandardError=syslog
+SyslogIdentifier=volumio
+User=volumio
+Group=volumio
+
+[Install]
+WantedBy=multi-user.target
