@@ -30,7 +30,11 @@ This is to make all three a bit greater together by fetching the show and artist
     service file to start bbcradioart.py automatically at startup 
   
 # To install this program as a service:
-Ensure bbcradioart.service has the correct path to python3 and bbcradioart.py: 
+To install this program as a service:
+
+Copy bbc_radio_art.py to a suitable location (/home/volumio is good)
+
+Ensure bbcradioart.service has the correct path to python3 and bbc_radio_art.py: 
 
 nano bbcradioart.service
 
