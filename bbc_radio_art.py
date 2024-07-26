@@ -11,7 +11,7 @@ from pytz import timezone
 import sys
 import datetime as dt
 from io import BytesIO
-from socketIO_client import SocketIO 
+from socketIO_client import SocketIO
 import json
 
 # get the path of the script
@@ -23,7 +23,7 @@ os.chdir(script_path)
 tz = timezone('Europe/London')
 
 # output file for show, title and track informtion
-outpath = '/data/plugins/miscellanea/pirateaudio/'
+outpath = '/data/plugins/system_hardware/pirateaudio/'
 outfilename = outpath + 'bbc_radio.json'
 
 # size of BBC art file to fetch
@@ -43,12 +43,15 @@ art_url_replace_with = str(art_size)+'x'+str(art_size)
 # timing, show and track information initialisation
 SHOW_END = 0
 TRACK_END = 0
+LASTUPDATE = 0
 NEXTUPDATE = 0
 RADIO_STATION = 'undefined'
 RADIO_SHOW = ''
 RADIO_TRACK = ''
 RADIO_ARTIST = ''
 status = 'startup'
+nowplaying = 'undefined'
+time_adjust = 190 # the times quoted for start and end of tracks seems to be out by a constant offset . Add this to current time to make more consistent
 
 # routine to check that the queried URLs returned valid data
 def checkbbcreturn(status_code,querystr):
@@ -81,15 +84,15 @@ data['valid_until'] = 0
 
 # main routine
 while True:
-   
+
     updateoutput = False
-    
+
     # query volumio status
     querystr = 'http://localhost:3000/api/v1/getState'
     try:
         r = requests.get(querystr)
         volumio = r.json()
-        status = volumio['status'] 
+        status = volumio['status']
         service = volumio['service'] # service will be web radio for BBC radio
 
         volumioartist = ''
@@ -103,11 +106,11 @@ while True:
             volumiotitle = volumio['title'] # title will be e.g. BBC Radio 6 Music
         if volumio['uri'] is not None:
             uri = volumio['uri']
-        
-        if status == 'play' and service == 'webradio' and ((volumioartist == 'BBC Radio') or ('bbc' in uri)):
+
+        if status == 'play' and (service == 'webradio' or service == 'mpd') and ((volumioartist == 'BBC Radio') or ('bbc' in uri)):
             playingBBC = True
             # BBC has recently defaulted to just calling the album and track 'BBC Radio', . Some information is in stream URI
-            if volumiotitle == 'BBC Radio' or volumioartist == '':        
+            if volumiotitle == 'BBC Radio' or volumioartist == '':
                 if 'bbc_radio_one' in uri:
                     volumiotitle = 'BBC Radio 1'
                 if 'bbc_radio_two' in uri:
@@ -136,17 +139,17 @@ while True:
         playingBBC = False
 
     temp = dt.datetime.fromtimestamp(time.time(),tz=tz).strftime('%H:%M:%S')
-    
-    if playingBBC == True:    
+
+    if playingBBC == True:
         # output information on show and track end times
-        print('\r Time {1}, Show end {2}, Track end {3}'.format(
-            temp,dt.datetime.utcfromtimestamp(time.time()).strftime('%H:%M:%S'), 
+        print('\r Time {1}, Show end {2}, Track end {3}, nowplaying={4}'.format(
+            temp,dt.datetime.utcfromtimestamp(time.time()).strftime('%H:%M:%S'),
                 dt.datetime.utcfromtimestamp(abs(SHOW_END)).strftime('%H:%M:%S'),
-                    dt.datetime.utcfromtimestamp(TRACK_END).strftime('%H:%M:%S')),end='')
+                    dt.datetime.utcfromtimestamp(TRACK_END).strftime('%H:%M:%S'),nowplaying),end='')
     else:
         print('\rTime {1}, Not playing BBC                                                  '.format(
             temp,dt.datetime.utcfromtimestamp(time.time()).strftime('%H:%M:%S')),end='')
- 
+
 
     # check to see if current time is after show or track end times, in which case we need to update
     if playingBBC == True and (time.time() > NEXTUPDATE):
@@ -185,11 +188,12 @@ while True:
                 except (KeyError, IndexError, ValueError):
                     print(u'BBC provided an unexpected format for track info.  Received [{0}]'.format(track))
                     successfulBBCinfo = False
-        
+
         if successfulBBCinfo == True:
+            LASTUPDATE = int(time.time())
             # radio show information
-            showname = show['titles']['primary']      
-            # show and track timings        
+            showname = show['titles']['primary']
+            # show and track timings
             elapsed = show['progress']['value']
             duration = show['duration']['value']
             # show end should be accurate within a couple of seconds
@@ -202,15 +206,15 @@ while True:
                 trackend = track['data'][0]['offset']['end']
                 nowplaying = track['data'][0]['offset']['now_playing']
                 # should be accurate within a couple of seconds
-                TRACK_END = int(time.time()) + trackend - elapsed
-                artist = track['data'][0]['titles']['primary'] 
-                title = track['data'][0]['titles']['secondary'] 
+                TRACK_END = int(time.time())+ trackend - elapsed
+                artist = track['data'][0]['titles']['primary']
+                title = track['data'][0]['titles']['secondary']
                 album = volumiotitle
                 #print(', Track: start {0}, end {1} : {2} by {3}'.format(trackstart,trackend,title,artist))
             else:                      # if no track data
                 print('\nQueried {0} and got no track data'.format(querystr))
                 trackstart = 0
-                trackend = int(time.time())+60 # check again in 1 min
+                trackend = int(time.time()) + 60 # check again in 1 min
                 TRACK_END = trackend
                 nowplaying = False
                 RADIO_TRACK = '<no track info>'
@@ -225,12 +229,11 @@ while True:
                 RADIO_SHOW = showname     # if so, change the show name
                 show_img_url = show['image_url']
                 # image art url has {recipe} in the middle, replace with image dimensions
-                show_img_url = show_img_url.replace(art_url_replace_text,art_url_replace_with)        	         
+                show_img_url = show_img_url.replace(art_url_replace_text,art_url_replace_with)
                 updateoutput = True
-                
 
             if RADIO_TRACK != title or RADIO_ARTIST != artist:   # has track changed?
-                RADIO_TRACK = title 
+                RADIO_TRACK = title
                 RADIO_ARTIST = artist
                 track_img_url = track['data'][0]['image_url']
                 track_img_url = track_img_url.replace(art_url_replace_text,art_url_replace_with)
@@ -245,10 +248,17 @@ while True:
         # check track and show info again after track or show ends
         NEXTUPDATE = min(TRACK_END,SHOW_END)
 
-        # if track has ended, but info on new track not available, or new show has started, but end time of current track is based upon 
+        # elapsed time for show sometimes falls out of sync with track start and end times,
+        # if so, fall back on the nowplaying tag
+        if (elapsed > trackend):
+            if (nowplaying == True):
+                NEXTUPDATE = LASTUPDATE+5
+
+        # if track has ended, according to elapsed time of show AND the nowplaying tag is set to False
+        # or new show has started, but end time of current track is based upon
         # previous show then switch to showinfo and update in 5s
-        if (elapsed > trackend) or (trackstart > elapsed):
-            nowplaying = False 
+        if ((elapsed > trackend) and nowplaying == False) or (trackstart > elapsed):
+            nowplaying = False
             if display == 'trackinfo':
                 display = 'showinfo'
                 updateoutput = True
@@ -269,12 +279,12 @@ while True:
         title = RADIO_TRACK
         artist = RADIO_ARTIST
         time.sleep(1)
-    
+
     if TRACK_END < 0:
         display = 'showinfo'
 
     # if show or track have changed, update the output
-    if updateoutput == True:        
+    if updateoutput == True:
         if display == 'trackinfo':
             data['album'] = album
             data['title'] = title
