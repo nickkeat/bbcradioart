@@ -50,10 +50,14 @@ Get systemd to recognise the new service:
 
 sudo systemctl daemon-reload
 
-Reboot the system, or manually get the service to start:
+Start the service:
 
 sudo service bbcradioart start
 
 Check the status of the service:
 
 sudo service bbcradioart status
+
+Enable the service so it starts on system boot:
+
+sudo systemctl enable bbcradioart.service
