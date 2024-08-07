@@ -15,11 +15,11 @@ This is to make all three a bit greater together by fetching the show and artist
 
   display.py
   
-    modified version of AxLED's plugin, which contains some minor changes to recognise the output from bbcradioart
+    modified version of AxLED's plugin, which contains some minor changes to recognise the output from bbcradioart. copy to /data/plugins/system_hardware/pirateaudio
     
   config.json
   
-    modified pirateaudio config file containing a 'rotate' keyword that allows the display to be rotated 180 degrees
+    modified pirateaudio config file containing a 'rotate' keyword that allows the display to be rotated 180 degrees. copy to /data/configuration/system_hardware/pirateaudio
   
   bbcradioart.py
   
@@ -28,6 +28,14 @@ This is to make all three a bit greater together by fetching the show and artist
   bbcradioart.service
   
     service file to start bbcradioart.py automatically at startup 
+
+bbcradioart requires the python timezone pytz package:
+
+   sudo pip3 install pytz
+
+check that bbc_radio_art works:
+
+   python3 bbc_radio_art.py
   
 # To install this program as a service:
 To install this program as a service:
