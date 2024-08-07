@@ -29,13 +29,13 @@ This is to make all three a bit greater together by fetching the show and artist
   
     service file to start bbcradioart.py automatically at startup 
 
-bbcradioart requires the python timezone pytz package:
+bbcradioart requires the python timezone pytz and socketIO_client packages:
 
-   sudo pip3 install pytz
+  sudo pip3 install pytz socketIO_client
 
 check that bbc_radio_art works:
 
-   python3 bbc_radio_art.py
+  python3 bbc_radio_art.py
   
 # To install this program as a service:
 To install this program as a service:
